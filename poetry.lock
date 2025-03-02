@@ -365,6 +365,28 @@ files = [
 python-dotenv = "*"
 
 [[package]]
+name = "elevenlabs"
+version = "1.52.0"
+description = ""
+optional = false
+python-versions = "<4.0,>=3.8"
+files = [
+    {file = "elevenlabs-1.52.0-py3-none-any.whl", hash = "sha256:9c83fe1b8cc6cd9f687fe055aae0fa2fe68f598bc7464fa30dda28e9be8413d2"},
+    {file = "elevenlabs-1.52.0.tar.gz", hash = "sha256:af1fcd8d450fb69e0ffff271bc6bea7cee3e63a938da5949cd23466cff5337e2"},
+]
+
+[package.dependencies]
+httpx = ">=0.21.2"
+pydantic = ">=1.9.2"
+pydantic-core = ">=2.18.2,<3.0.0"
+requests = ">=2.20"
+typing_extensions = ">=4.0.0"
+websockets = ">=11.0"
+
+[package.extras]
+pyaudio = ["pyaudio (>=0.2.14)"]
+
+[[package]]
 name = "flask"
 version = "3.1.0"
 description = "A simple framework for building complex web applications."
@@ -1428,4 +1450,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "06d9bbc4ca4107bb14ad26d543659904b8e53696105616b0ddd9efdc861b9eaa"
+content-hash = "81145e3e11fa2179ecfa044bf1a05445d25664fb00ea0ec9e90ec4712dedbfd8"
