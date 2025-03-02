@@ -9,6 +9,9 @@ readme = "README.md"
 python = "^3.12"
 twilio = "^9.4.6"
 flask = "^3.1.0"
+dotenv = "^0.9.9"
+openai = "^1.65.1"
+websockets = "^15.0"
 
 
 [build-system]
