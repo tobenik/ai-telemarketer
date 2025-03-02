@@ -1,45 +1,45 @@
-import logging
 import os
+import logging
 from logging.handlers import RotatingFileHandler
 
-def setup_logger(logger_name, log_file, level=logging.INFO):
-    """
-    Set up a logger with file rotation
+def setup_logger(name, log_file, level=logging.INFO):
+    """Set up a logger with specified name and file."""
+    # Create logs directory if it doesn't exist
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
     
-    Args:
-        logger_name (str): Name of the logger
-        log_file (str): Path to the log file
-        level (int): Logging level
-        
-    Returns:
-        logger: Configured logger instance
-    """
-    # Make sure the log directory exists
-    log_dir = os.path.dirname(os.path.abspath(log_file))
-    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join('logs', log_file)
     
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(level)
+    # Configure logger
+    logger = logging.getLogger(name)
     
-    # Clear existing handlers to avoid duplicates
+    # Avoid duplicate handlers
     if logger.hasHandlers():
         logger.handlers.clear()
     
-    # Create handler for the log file with larger size limit
-    file_handler = RotatingFileHandler(log_file, maxBytes=100000, backupCount=5)
+    logger.setLevel(level)
     
-    # Create a formatter and add it to the handler
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # Create file handler
+    file_handler = RotatingFileHandler(
+        log_path, 
+        maxBytes=10485760,  # 10MB
+        backupCount=5
+    )
+    
+    # Create formatter and add it to the handler
+    formatter = logging.Formatter(
+        '%(asctime)s | %(name)s | %(levelname)s | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
     file_handler.setFormatter(formatter)
     
-    # Add the file handler to the logger
-    logger.addHandler(file_handler)
-    
-    # Create a console handler
+    # Create console handler
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
+    console_handler.setLevel(logging.ERROR)
     
-    # Add the console handler to the logger
+    # Add handlers to logger
+    logger.addHandler(file_handler)
     logger.addHandler(console_handler)
     
     return logger
