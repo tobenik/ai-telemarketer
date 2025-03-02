@@ -17,8 +17,7 @@ class ElevenLabsClient:
         if not self.api_key:
             tts_logger.error("ElevenLabs API key not found. Please add it to your .env file.")
         
-        # Default voice - you can change this or make it configurable
-        self.voice_id = "21m00Tcm4TlvDq8ikWAM"  # Default voice ID for "Rachel"
+        self.voice_id = "YSabzCJMvEHDduIDMdwV"  # Voice ID for Aurora
     
     def text_to_speech(self, text):
         """
@@ -40,7 +39,7 @@ class ElevenLabsClient:
         
         data = {
             "text": text,
-            "model_id": "eleven_multilingual_v1",
+            "model_id": "eleven_flash_v2_5",
             "voice_settings": {
                 "stability": 0.5,
                 "similarity_boost": 0.5
