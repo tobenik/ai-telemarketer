@@ -28,7 +28,7 @@ def setup_logger(name, log_file, level=logging.INFO):
     
     # Create formatter and add it to the handler
     formatter = logging.Formatter(
-        '%(asctime)s | %(name)s | %(levelname)s | %(message)s',
+        '%(asctime)s:%(msecs)03d | %(name)s | %(levelname)s | %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     file_handler.setFormatter(formatter)
