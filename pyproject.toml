@@ -13,6 +13,7 @@ dotenv = "^0.9.9"
 openai = "^1.65.1"
 websockets = "^15.0"
 elevenlabs = "^1.52.0"
+flask-sock = "^0.7.0"
 
 
 [build-system]

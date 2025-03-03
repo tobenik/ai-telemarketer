@@ -77,17 +77,51 @@
         margin-top: 10px;
         text-align: center;
       }
+      .card {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+      }
+      input,
+      textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      #result {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        display: none;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>AI Telemarketer Server</h1>
-      <p>Server is running and ready to handle calls.</p>
+      <p>Server is running and ready to handle calls via ElevenLabs.</p>
 
       <div class="menu">
         <a href="/admin">Admin Dashboard</a>
         <a href="/admin/system">System Status</a>
-        <a href="/cleanup">Clean Audio Cache</a>
       </div>
 
       <div class="status">
@@ -100,17 +134,10 @@
         </div>
         <div class="service-row">
           <div class="service-name">
-            <span id="llm-dot" class="status-dot active"></span>
-            <strong>LLM Client:</strong>
+            <span id="elevenlabs-dot" class="status-dot active"></span>
+            <strong>ElevenLabs Client:</strong>
           </div>
-          <span id="llm-status">Connected</span>
-        </div>
-        <div class="service-row">
-          <div class="service-name">
-            <span id="tts-dot" class="status-dot active"></span>
-            <strong>TTS Client:</strong>
-          </div>
-          <span id="tts-status">Connected</span>
+          <span id="elevenlabs-status">Connected</span>
         </div>
         <div class="service-row">
           <div class="service-name">
@@ -119,6 +146,42 @@
           </div>
           <span id="db-status">Connected</span>
         </div>
+      </div>
+
+      <div class="card">
+        <h2>Make Outbound Call</h2>
+        <form id="outboundCallForm">
+          <div class="form-group">
+            <label for="phoneNumber">Phone Number:</label>
+            <input
+              type="tel"
+              id="phoneNumber"
+              name="number"
+              placeholder="+358501234567"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="prompt">Agent Prompt:</label>
+            <textarea
+              id="prompt"
+              name="prompt"
+              rows="4"
+              placeholder="You are a telemarketer from a magazine company..."
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label for="firstMessage">First Message:</label>
+            <textarea
+              id="firstMessage"
+              name="first_message"
+              rows="2"
+              placeholder="Hello! I'm calling from..."
+            ></textarea>
+          </div>
+          <button type="submit">Make Call</button>
+        </form>
+        <div id="result"></div>
       </div>
 
       <div class="version">AI Telemarketer Server v1.0</div>
@@ -133,17 +196,11 @@
           });
           const data = await response.json();
 
-          // Update LLM status
-          document.getElementById("llm-status").textContent = data.llm_client;
-          document.getElementById("llm-dot").className =
-            data.llm_client === "Connected"
-              ? "status-dot active"
-              : "status-dot inactive";
-
-          // Update TTS status
-          document.getElementById("tts-status").textContent = data.tts_client;
-          document.getElementById("tts-dot").className =
-            data.tts_client === "Connected"
+          // Update ElevenLabs status
+          document.getElementById("elevenlabs-status").textContent =
+            data.elevenlabs_client;
+          document.getElementById("elevenlabs-dot").className =
+            data.elevenlabs_client === "Connected"
               ? "status-dot active"
               : "status-dot inactive";
 
@@ -160,6 +217,44 @@
 
       // Check status on page load
       window.addEventListener("load", checkStatus);
+
+      document
+        .getElementById("outboundCallForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const phoneNumber = document.getElementById("phoneNumber").value;
+          const prompt = document.getElementById("prompt").value;
+          const firstMessage = document.getElementById("firstMessage").value;
+
+          const resultDiv = document.getElementById("result");
+          resultDiv.style.display = "block";
+          resultDiv.innerHTML = "Initiating call...";
+
+          try {
+            const response = await fetch("/outbound-call", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                number: phoneNumber,
+                prompt: prompt,
+                first_message: firstMessage,
+              }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              resultDiv.innerHTML = `Call initiated successfully! Call ID: ${data.callSid}`;
+            } else {
+              resultDiv.innerHTML = `Error: ${data.error}`;
+            }
+          } catch (error) {
+            resultDiv.innerHTML = `Error: ${error.message}`;
+          }
+        });
     </script>
   </body>
 </html>
