@@ -1,0 +1,270 @@
+{% extends "admin/layout.html" %} {% block title %}Dashboard - AI Telemarketer
+Admin{% endblock %} {% block content %}
+<div class="row mb-4">
+  <div class="col-md-6 col-lg-3 mb-3">
+    <div class="card metrics-card">
+      <div class="card-body">
+        <h5 class="card-title">Total Calls</h5>
+        <h2 class="card-text" id="total-calls">--</h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-3 mb-3">
+    <div class="card metrics-card">
+      <div class="card-body">
+        <h5 class="card-title">Active Calls</h5>
+        <h2 class="card-text" id="active-calls">--</h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-3 mb-3">
+    <div class="card metrics-card">
+      <div class="card-body">
+        <h5 class="card-title">Avg. LLM Response Time</h5>
+        <h2 class="card-text" id="avg-llm-time">--</h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-3 mb-3">
+    <div class="card metrics-card">
+      <div class="card-body">
+        <h5 class="card-title">Avg. TTS Response Time</h5>
+        <h2 class="card-text" id="avg-tts-time">--</h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h5>Performance Metrics</h5>
+      </div>
+      <div class="card-body">
+        <canvas id="performance-chart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card">
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <h5>Recent Calls</h5>
+        <button type="button" class="btn btn-primary btn-sm" id="refresh-btn">
+          Refresh
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Start Time</th>
+                <th>Duration</th>
+                <th>Status</th>
+                <th>Caller</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="calls-table-body">
+              <tr>
+                <td colspan="6" class="text-center">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Fetch calls data from API
+  async function fetchCalls() {
+    try {
+      const response = await fetch("/admin/api/calls");
+      const data = await response.json();
+
+      if (data.success) {
+        displayCalls(data.calls);
+        updateCallMetrics(data.calls);
+      } else {
+        console.error("Error fetching calls:", data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching calls:", error);
+    }
+  }
+
+  // Fetch performance data from API
+  async function fetchPerformance() {
+    try {
+      const response = await fetch("/admin/api/performance");
+      const data = await response.json();
+
+      if (data.success) {
+        displayPerformanceMetrics(data.stats);
+      } else {
+        console.error("Error fetching performance:", data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching performance:", error);
+    }
+  }
+
+  // Display calls in the table
+  function displayCalls(calls) {
+    const tableBody = document.getElementById("calls-table-body");
+
+    if (!calls || calls.length === 0) {
+      tableBody.innerHTML =
+        '<tr><td colspan="6" class="text-center">No calls found</td></tr>';
+      return;
+    }
+
+    tableBody.innerHTML = "";
+    calls.forEach((call) => {
+      const row = document.createElement("tr");
+
+      // Format duration
+      let durationText = "--";
+      if (call.call_duration) {
+        const seconds = call.call_duration;
+        durationText = `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+      }
+
+      // Format date
+      const startDate = new Date(call.start_time);
+      const formattedDate = startDate.toLocaleString();
+
+      row.innerHTML = `
+                <td>${call.id}</td>
+                <td>${formattedDate}</td>
+                <td>${durationText}</td>
+                <td><span class="badge ${
+                  call.status === "completed" ? "bg-success" : "bg-warning"
+                }">${call.status}</span></td>
+                <td>${call.caller_number || "Unknown"}</td>
+                <td>
+                    <a href="/admin/call/${
+                      call.id
+                    }" class="btn btn-sm btn-info">View Details</a>
+                </td>
+            `;
+      tableBody.appendChild(row);
+    });
+  }
+
+  // Update call metrics
+  function updateCallMetrics(calls) {
+    document.getElementById("total-calls").textContent = calls.length;
+    const activeCalls = calls.filter(
+      (call) => call.status === "in-progress"
+    ).length;
+    document.getElementById("active-calls").textContent = activeCalls;
+  }
+
+  // Display performance metrics
+  function displayPerformanceMetrics(stats) {
+    let llmStats = stats.find((stat) => stat.step_name === "llm_processing");
+    let ttsStats = stats.find((stat) => stat.step_name === "tts_processing");
+
+    // Update avg response time cards
+    if (llmStats) {
+      document.getElementById("avg-llm-time").textContent = `${Math.round(
+        llmStats.avg_duration
+      )}ms`;
+    }
+
+    if (ttsStats) {
+      document.getElementById("avg-tts-time").textContent = `${Math.round(
+        ttsStats.avg_duration
+      )}ms`;
+    }
+
+    // Create performance chart
+    const ctx = document.getElementById("performance-chart").getContext("2d");
+
+    // Prepare data for chart
+    const labels = stats.map((stat) => stat.step_name);
+    const avgData = stats.map((stat) => stat.avg_duration);
+    const minData = stats.map((stat) => stat.min_duration);
+    const maxData = stats.map((stat) => stat.max_duration);
+
+    // Check if chart instance exists and destroy it
+    if (window.performanceChart) {
+      window.performanceChart.destroy();
+    }
+
+    window.performanceChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Avg Time (ms)",
+            data: avgData,
+            backgroundColor: "rgba(54, 162, 235, 0.5)",
+            borderColor: "rgba(54, 162, 235, 1)",
+            borderWidth: 1,
+          },
+          {
+            label: "Min Time (ms)",
+            data: minData,
+            backgroundColor: "rgba(75, 192, 192, 0.5)",
+            borderColor: "rgba(75, 192, 192, 1)",
+            borderWidth: 1,
+          },
+          {
+            label: "Max Time (ms)",
+            data: maxData,
+            backgroundColor: "rgba(255, 99, 132, 0.5)",
+            borderColor: "rgba(255, 99, 132, 1)",
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: "Time (ms)",
+            },
+          },
+          x: {
+            title: {
+              display: true,
+              text: "Processing Step",
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // Refresh data
+  function refreshData() {
+    fetchCalls();
+    fetchPerformance();
+  }
+
+  // Setup refresh button
+  document.getElementById("refresh-btn").addEventListener("click", refreshData);
+
+  // Initialize dashboard
+  document.addEventListener("DOMContentLoaded", function () {
+    refreshData();
+    // Auto-refresh every 30 seconds
+    setInterval(refreshData, 30000);
+  });
+</script>
+{% endblock %}

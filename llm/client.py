@@ -1,9 +1,11 @@
 import os
 import json
 import requests
+from datetime import datetime
 from dotenv import load_dotenv
 from logger import setup_logger
 from typing import Optional, Dict, Any, List
+from timing import measure_time
 
 # Setup specific logger for LLM interactions
 llm_logger = setup_logger('llm_interactions', 'llm_interactions.log')
@@ -24,6 +26,9 @@ class LLMClient:
         self.conversation_history = [
             {"role": "system", "content": self.get_system_prompt()}
         ]
+        
+        # Reference to store performance metrics - will be set from server.py
+        self.store_performance_metric = None
         
         if not self.api_key:
             llm_logger.error("OpenRouter API key not found. Please add it to your .env file.")
@@ -50,7 +55,7 @@ class LLMClient:
             If you don't know something, be honest about it.
             """
     
-    def get_response(self, user_input=""):
+    def get_response(self, user_input="", call_id=None):
         """Get a response from the LLM via OpenRouter."""
         if not user_input:
             if self.playbook and "default_input" in self.playbook:
@@ -75,12 +80,20 @@ class LLMClient:
         }
         
         try:
-            response = requests.post(
-                self.base_url,
-                headers=headers,
-                data=json.dumps(data)
-            )
-            response_data = response.json()
+            # Measure LLM API request time
+            with measure_time(
+                call_id, 
+                "llm_processing", 
+                self.store_performance_metric, 
+                {"input_length": len(user_input)}
+            ):
+                response = requests.post(
+                    self.base_url,
+                    headers=headers,
+                    data=json.dumps(data)
+                )
+                response_data = response.json()
+                
             llm_logger.info(f"OpenRouter response: {response_data}")
             
             if "choices" in response_data and len(response_data["choices"]) > 0:

@@ -1,0 +1,164 @@
+{% extends "admin/layout.html" %} {% block title %}System Status - AI
+Telemarketer Admin{% endblock %} {% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <h5>System Status</h5>
+        <button class="btn btn-primary btn-sm" id="refresh-btn">Refresh</button>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6 class="mb-3">Server Status</h6>
+            <ul class="list-group mb-4">
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                Active Calls
+                <span class="badge bg-primary" id="active-calls">--</span>
+              </li>
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                Cached Audio Files
+                <span class="badge bg-info" id="cached-files">--</span>
+              </li>
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                LLM Client
+                <span class="badge" id="llm-status">--</span>
+              </li>
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                TTS Client
+                <span class="badge" id="tts-status">--</span>
+              </li>
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                Database
+                <span class="badge" id="db-status">--</span>
+              </li>
+            </ul>
+          </div>
+          <div class="col-md-6">
+            <h6 class="mb-3">Database Statistics</h6>
+            <ul class="list-group mb-4">
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                Total Calls
+                <span class="badge bg-primary" id="total-calls">--</span>
+              </li>
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                Conversation Entries
+                <span class="badge bg-info" id="conversation-entries">--</span>
+              </li>
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                Performance Metrics
+                <span class="badge bg-secondary" id="performance-metrics"
+                  >--</span
+                >
+              </li>
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                Database Size
+                <span class="badge bg-dark" id="db-size">--</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-center mt-4">
+          <a href="/cleanup" class="btn btn-warning me-3">Clean Audio Cache</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Fetch system status
+  async function fetchSystemStatus() {
+    try {
+      const response = await fetch("/status");
+      const data = await response.json();
+
+      // Update system status indicators
+      document.getElementById("active-calls").textContent = data.active_calls;
+      document.getElementById("cached-files").textContent =
+        data.cached_audio_files;
+
+      // Update status indicators with appropriate colors
+      const llmStatus = document.getElementById("llm-status");
+      llmStatus.textContent = data.llm_client;
+      llmStatus.className =
+        data.llm_client === "Connected"
+          ? "badge bg-success"
+          : "badge bg-danger";
+
+      const ttsStatus = document.getElementById("tts-status");
+      ttsStatus.textContent = data.tts_client;
+      ttsStatus.className =
+        data.tts_client === "Connected"
+          ? "badge bg-success"
+          : "badge bg-danger";
+
+      const dbStatus = document.getElementById("db-status");
+      dbStatus.textContent = data.database;
+      dbStatus.className =
+        data.database === "Connected" ? "badge bg-success" : "badge bg-danger";
+    } catch (error) {
+      console.error("Error fetching system status:", error);
+    }
+  }
+
+  // Fetch database statistics
+  async function fetchDbStats() {
+    try {
+      const response = await fetch("/admin/api/db/stats");
+      const data = await response.json();
+
+      if (data.success) {
+        const stats = data.stats;
+
+        document.getElementById("total-calls").textContent = stats.calls;
+        document.getElementById("conversation-entries").textContent =
+          stats.conversation_entries;
+        document.getElementById("performance-metrics").textContent =
+          stats.performance_metrics;
+        document.getElementById("db-size").textContent =
+          stats.db_size.toFixed(2) + " MB";
+      }
+    } catch (error) {
+      console.error("Error fetching database stats:", error);
+    }
+  }
+
+  // Refresh all data
+  function refreshData() {
+    fetchSystemStatus();
+    fetchDbStats();
+  }
+
+  // Setup refresh button
+  document.getElementById("refresh-btn").addEventListener("click", refreshData);
+
+  // Initialize page data
+  document.addEventListener("DOMContentLoaded", function () {
+    refreshData();
+    // Auto-refresh every 30 seconds
+    setInterval(refreshData, 30000);
+  });
+</script>
+{% endblock %}

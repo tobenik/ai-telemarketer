@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AI Telemarketer</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        margin-top: 0;
+      }
+      .menu {
+        margin-top: 20px;
+      }
+      .menu a {
+        display: inline-block;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      .menu a:hover {
+        background-color: #0056b3;
+      }
+      .status {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #e9f7ef;
+        border-radius: 4px;
+      }
+      .status p {
+        margin: 5px 0;
+        display: flex;
+        justify-content: space-between;
+      }
+      .status-dot {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 5px;
+      }
+      .status-dot.active {
+        background-color: #2ecc71;
+      }
+      .status-dot.inactive {
+        background-color: #e74c3c;
+      }
+      .service-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .service-name {
+        display: flex;
+        align-items: center;
+      }
+      .version {
+        font-size: 0.7em;
+        color: #888;
+        margin-top: 10px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>AI Telemarketer Server</h1>
+      <p>Server is running and ready to handle calls.</p>
+
+      <div class="menu">
+        <a href="/admin">Admin Dashboard</a>
+        <a href="/admin/system">System Status</a>
+        <a href="/cleanup">Clean Audio Cache</a>
+      </div>
+
+      <div class="status">
+        <div class="service-row">
+          <div class="service-name">
+            <span class="status-dot active"></span>
+            <strong>Server Status:</strong>
+          </div>
+          <span>Online</span>
+        </div>
+        <div class="service-row">
+          <div class="service-name">
+            <span id="llm-dot" class="status-dot active"></span>
+            <strong>LLM Client:</strong>
+          </div>
+          <span id="llm-status">Connected</span>
+        </div>
+        <div class="service-row">
+          <div class="service-name">
+            <span id="tts-dot" class="status-dot active"></span>
+            <strong>TTS Client:</strong>
+          </div>
+          <span id="tts-status">Connected</span>
+        </div>
+        <div class="service-row">
+          <div class="service-name">
+            <span id="db-dot" class="status-dot active"></span>
+            <strong>Database:</strong>
+          </div>
+          <span id="db-status">Connected</span>
+        </div>
+      </div>
+
+      <div class="version">AI Telemarketer Server v1.0</div>
+    </div>
+
+    <script>
+      // Fetch actual status from API
+      async function checkStatus() {
+        try {
+          const response = await fetch("/status", {
+            headers: { Accept: "application/json" },
+          });
+          const data = await response.json();
+
+          // Update LLM status
+          document.getElementById("llm-status").textContent = data.llm_client;
+          document.getElementById("llm-dot").className =
+            data.llm_client === "Connected"
+              ? "status-dot active"
+              : "status-dot inactive";
+
+          // Update TTS status
+          document.getElementById("tts-status").textContent = data.tts_client;
+          document.getElementById("tts-dot").className =
+            data.tts_client === "Connected"
+              ? "status-dot active"
+              : "status-dot inactive";
+
+          // Update DB status
+          document.getElementById("db-status").textContent = data.database;
+          document.getElementById("db-dot").className =
+            data.database === "Connected"
+              ? "status-dot active"
+              : "status-dot inactive";
+        } catch (error) {
+          console.error("Error fetching status:", error);
+        }
+      }
+
+      // Check status on page load
+      window.addEventListener("load", checkStatus);
+    </script>
+  </body>
+</html>
