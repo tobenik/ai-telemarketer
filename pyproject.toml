@@ -14,6 +14,7 @@ openai = "^1.65.1"
 websockets = "^15.0"
 elevenlabs = "^1.52.0"
 flask-sock = "^0.7.0"
+websocket-client = "^1.8.0"
 
 
 [build-system]

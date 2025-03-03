@@ -231,5 +231,83 @@ def get_performance_statistics():
     finally:
         conn.close()
 
+def get_recent_calls(limit=5):
+    """Get the most recent calls from the database"""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT * FROM calls 
+            ORDER BY start_time DESC 
+            LIMIT ?
+            """,
+            (limit,)
+        )
+        calls = [dict(row) for row in cursor.fetchall()]
+        return calls
+    except Exception as e:
+        db_logger.error(f"Error retrieving recent calls: {str(e)}")
+        return None
+    finally:
+        conn.close()
+
+def get_call_by_sid(call_sid):
+    """Get call details using the Twilio call SID"""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM calls WHERE call_sid = ?", (call_sid,))
+        call = cursor.fetchone()
+        if call:
+            return dict(call)
+        return None
+    except Exception as e:
+        db_logger.error(f"Error retrieving call by SID {call_sid}: {str(e)}")
+        return None
+    finally:
+        conn.close()
+
+def update_call_with_twilio_data(call_sid, twilio_data):
+    """Update a call record with data from Twilio"""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        # First get the call ID from the call_sid
+        cursor.execute("SELECT id FROM calls WHERE call_sid = ?", (call_sid,))
+        result = cursor.fetchone()
+        if not result:
+            db_logger.error(f"No call found with SID {call_sid}")
+            return False
+            
+        call_id = result['id']
+        
+        # Update the call record
+        cursor.execute(
+            """
+            UPDATE calls SET 
+            status = ?,
+            call_duration = ?
+            WHERE id = ?
+            """,
+            (twilio_data.get('status', 'unknown'), twilio_data.get('duration', 0), call_id)
+        )
+        
+        if twilio_data.get('status') == 'completed' and 'end_time' not in twilio_data:
+            cursor.execute(
+                "UPDATE calls SET end_time = ? WHERE id = ?",
+                (datetime.now(), call_id)
+            )
+            
+        conn.commit()
+        db_logger.info(f"Updated call {call_id} with Twilio data")
+        return True
+    except Exception as e:
+        db_logger.error(f"Error updating call with Twilio data: {str(e)}")
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
 # Initialize database when module is imported
 init_db()

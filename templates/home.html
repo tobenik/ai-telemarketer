@@ -112,13 +112,35 @@
         border-radius: 4px;
         display: none;
       }
+      .active-calls {
+        margin-top: 20px;
+      }
+      .active-calls-badge {
+        display: inline-block;
+        background-color: #007bff;
+        color: white;
+        border-radius: 12px;
+        padding: 3px 10px;
+        font-size: 0.8em;
+        margin-left: 5px;
+      }
+      .technology-info {
+        font-size: 0.8em;
+        color: #666;
+        margin-bottom: 20px;
+      }
+      .technology-info strong {
+        color: #333;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>AI Telemarketer Server</h1>
-      <p>Server is running and ready to handle calls via ElevenLabs.</p>
-
+      <div class="technology-info">
+        <strong>Powered by:</strong> ElevenLabs AI + Twilio Telephony
+      </div>
+      
       <div class="menu">
         <a href="/admin">Admin Dashboard</a>
         <a href="/admin/system">System Status</a>
@@ -135,9 +157,16 @@
         <div class="service-row">
           <div class="service-name">
             <span id="elevenlabs-dot" class="status-dot active"></span>
-            <strong>ElevenLabs Client:</strong>
+            <strong>ElevenLabs AI:</strong>
           </div>
           <span id="elevenlabs-status">Connected</span>
+        </div>
+        <div class="service-row">
+          <div class="service-name">
+            <span id="twilio-dot" class="status-dot active"></span>
+            <strong>Twilio Telephony:</strong>
+          </div>
+          <span id="twilio-status">Connected</span>
         </div>
         <div class="service-row">
           <div class="service-name">
@@ -146,9 +175,15 @@
           </div>
           <span id="db-status">Connected</span>
         </div>
+        <div class="service-row">
+          <div class="service-name">
+            <strong>Active Calls:</strong>
+            <span id="active-calls-badge" class="active-calls-badge">0</span>
+          </div>
+        </div>
       </div>
 
-      <div class="card">
+      <div class="card"></div>
         <h2>Make Outbound Call</h2>
         <form id="outboundCallForm">
           <div class="form-group">
@@ -184,7 +219,7 @@
         <div id="result"></div>
       </div>
 
-      <div class="version">AI Telemarketer Server v1.0</div>
+      <div class="version">AI Telemarketer Server v1.1 - ElevenLabs + Twilio Edition</div>
     </div>
 
     <script>
@@ -203,6 +238,14 @@
             data.elevenlabs_client === "Connected"
               ? "status-dot active"
               : "status-dot inactive";
+              
+          // Update Twilio status
+          document.getElementById("twilio-status").textContent =
+            data.twilio_client;
+          document.getElementById("twilio-dot").className =
+            data.twilio_client === "Connected"
+              ? "status-dot active"
+              : "status-dot inactive";
 
           // Update DB status
           document.getElementById("db-status").textContent = data.database;
@@ -210,13 +253,18 @@
             data.database === "Connected"
               ? "status-dot active"
               : "status-dot inactive";
+              
+          // Update active calls
+          document.getElementById("active-calls-badge").textContent = 
+            data.active_calls || 0;
         } catch (error) {
           console.error("Error fetching status:", error);
         }
       }
 
-      // Check status on page load
+      // Check status on page load and every 30 seconds
       window.addEventListener("load", checkStatus);
+      setInterval(checkStatus, 30000);
 
       document
         .getElementById("outboundCallForm")
@@ -247,12 +295,21 @@
             const data = await response.json();
 
             if (data.success) {
-              resultDiv.innerHTML = `Call initiated successfully! Call ID: ${data.callSid}`;
+              resultDiv.innerHTML = `
+                <div style="color:green">
+                  <strong>Call initiated successfully!</strong>
+                  <p>Call ID: ${data.callSid}</p>
+                  <p>The person will receive a call shortly. The conversation will be handled
+                  by ElevenLabs AI using your prompt and first message.</p>
+                </div>
+              `;
+              // Refresh status to show active call
+              setTimeout(checkStatus, 1000);
             } else {
-              resultDiv.innerHTML = `Error: ${data.error}`;
+              resultDiv.innerHTML = `<div style="color:red"><strong>Error:</strong> ${data.error}</div>`;
             }
           } catch (error) {
-            resultDiv.innerHTML = `Error: ${error.message}`;
+            resultDiv.innerHTML = `<div style="color:red"><strong>Error:</strong> ${error.message}</div>`;
           }
         });
     </script>

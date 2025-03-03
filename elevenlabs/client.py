@@ -42,52 +42,13 @@ class ElevenLabsClient:
             elevenlabs_logger.error(f"Error getting signed URL: {str(e)}")
             return None
     
+    # Legacy method - will be replaced by Twilio integration
     def create_call(self, number, prompt=None, first_message=None):
-        """Initiate a call through ElevenLabs Conversational AI"""
-        try:
-            headers = {
-                "Content-Type": "application/json",
-                "xi-api-key": self.api_key
-            }
-            
-            payload = {
-                "agent_id": self.agent_id,
-                "phone_number": number,
-            }
-            
-            # Add optional parameters if provided
-            if prompt or first_message:
-                payload["conversation_config_override"] = {
-                    "agent": {}
-                }
-                
-                if prompt:
-                    payload["conversation_config_override"]["agent"]["prompt"] = {
-                        "prompt": prompt
-                    }
-                
-                if first_message:
-                    payload["conversation_config_override"]["agent"]["first_message"] = first_message
-            
-            elevenlabs_logger.info(f"Initiating call to {number} with agent {self.agent_id}")
-            
-            response = requests.post(
-                f"{self.base_url}/phone/call",
-                headers=headers,
-                json=payload
-            )
-            
-            if response.status_code != 200:
-                elevenlabs_logger.error(f"Failed to initiate call: {response.text}")
-                return None
-                
-            data = response.json()
-            elevenlabs_logger.info(f"Call initiated successfully: {data}")
-            return data
-            
-        except Exception as e:
-            elevenlabs_logger.error(f"Error initiating call: {str(e)}")
-            return None
+        """
+        Legacy method to initiate a call through ElevenLabs Conversational AI.
+        This is being replaced by Twilio integration.
+        """
+        elevenlabs_logger.warning("Using deprecated direct ElevenLabs call method")
     
     def get_calls(self, limit=10):
         """Get recent calls made through ElevenLabs"""
@@ -112,3 +73,33 @@ class ElevenLabsClient:
         except Exception as e:
             elevenlabs_logger.error(f"Error getting calls: {str(e)}")
             return []
+
+    def prepare_initial_config(self, prompt=None, first_message=None, dynamic_variables=None):
+        """
+        Prepare the initial configuration message for the ElevenLabs WebSocket.
+        
+        Args:
+            prompt (str): Optional custom prompt to override agent's default prompt
+            first_message (str): Optional custom first message from the agent
+            dynamic_variables (dict): Optional dynamic variables to pass to the agent
+            
+        Returns:
+            dict: The configuration object ready to be sent via WebSocket
+        """
+        config = {
+            "type": "conversation_initiation_client_data",
+            "dynamic_variables": dynamic_variables or {},
+            "conversation_config_override": {
+                "agent": {}
+            }
+        }
+        
+        if prompt:
+            config["conversation_config_override"]["agent"]["prompt"] = {
+                "prompt": prompt
+            }
+            
+        if first_message:
+            config["conversation_config_override"]["agent"]["first_message"] = first_message
+        
+        return config
